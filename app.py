@@ -24,6 +24,7 @@ class LootLockerApp:
 
         self.game = GameState()
         self.locked = False
+        self.pending_resolve: str | None = None
         self.cards: list[tk.Button] = []
         self.turn_text = tk.StringVar()
         self.pair_text = tk.StringVar()
@@ -128,9 +129,10 @@ class LootLockerApp:
         if len(self.game.selected) == 2:
             self.locked = True
             self.message_text.set("Checking your loot…")
-            self.root.after(700, self._resolve_turn)
+            self.pending_resolve = self.root.after(700, self._resolve_turn)
 
     def _resolve_turn(self) -> None:
+        self.pending_resolve = None
         matched = self.game.resolve_turn()
         self.locked = False
         if matched:
@@ -143,6 +145,9 @@ class LootLockerApp:
             self.message_text.set(f"All loot found in {self.game.turns} turns. Nicely played!")
 
     def _start_new_game(self) -> None:
+        if self.pending_resolve is not None:
+            self.root.after_cancel(self.pending_resolve)
+            self.pending_resolve = None
         self.game = GameState()
         self.locked = False
         self.message_text.set("Good luck, treasure hunter!")
